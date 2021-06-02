@@ -1,44 +1,11 @@
-import type { Provider } from './types';
-import { getStoredCredentials, Credential, storeCredentials } from './cred.service.js';
-import inquirer from 'inquirer';
-import { getBrowser } from './browser.service.js';
-import { Page } from 'playwright/types/types.js';
-import path from 'path';
-import fs from 'fs/promises';
+import type { Provider, ProviderDownloadMethod } from '../types.js';
+import { getBrowser } from '../service/browser.service.js';
+import { ProviderLoginMethod } from '../types.js';
 
-const NAMESPACE = 'bouygues';
-
-const bouyguesLogin = async () => {
-  const storedCredentials = await getStoredCredentials(NAMESPACE);
-  let credentials: Credential;
-
-  if (storedCredentials.length === 0) {
-    console.log('You never connect to your Bouygues account before.');
-
-    const result = await inquirer.prompt<Credential & { confirm: true }>([
-      {
-        type: 'input',
-        message: 'Bouygues login (phone number)',
-        name: 'account',
-      },
-      { type: 'password', message: 'Bouygues password', name: 'password' },
-      { type: 'confirm', message: 'do you want to store this credentials for future use ?', name: 'confirm' },
-    ]);
-
-    credentials = { account: result.account, password: result.password };
-    if (result.confirm) {
-      await storeCredentials(NAMESPACE, result.account, result.password);
-    }
-  } else {
-    console.log('Bouygues credential founded.');
-    credentials = storedCredentials[0];
-  }
-
-  console.log('Login bouygues with stored credentials');
-
+const bouyguesLogin: ProviderLoginMethod = async (credentials) => {
   const browser = await getBrowser();
-
   const page = await browser.newPage();
+
   await page.goto('https://www.bouyguestelecom.fr/mon-compte/mes-factures');
   await page.waitForNavigation({ url: 'https://www.bouyguestelecom.fr/mon-compte/mes-factures' });
   await page.waitForLoadState('networkidle');
@@ -65,16 +32,10 @@ const bouyguesLogin = async () => {
   await page.waitForNavigation({ url: 'https://www.bouyguestelecom.fr/mon-compte/mes-factures#' });
   await page.waitForLoadState('networkidle');
 
-  if (page.url() === 'https://www.bouyguestelecom.fr/mon-compte/mes-factures#') {
-    console.log('Successfully connected in your Bouygues account!');
-    return true;
-  } else {
-    console.error("Can't connect to your Bouygues account!");
-    return false;
-  }
+  return page.url() === 'https://www.bouyguestelecom.fr/mon-compte/mes-factures#';
 };
 
-const bouyguesDownload = async ({ downloadDirectory }: { downloadDirectory: string }) => {
+const bouyguesDownload: ProviderDownloadMethod = async () => {
   console.log('Getting the list of invoices...');
   const browser = await getBrowser({ acceptDownloads: true });
   const page = await browser.newPage();
@@ -95,19 +56,23 @@ const bouyguesDownload = async ({ downloadDirectory }: { downloadDirectory: stri
 
   const [download] = await Promise.all([page.waitForEvent('download'), lastMonthDownloadLink.click()]);
 
-  const title = `${year}-${month}-${price}.pdf`;
-
   // wait for download to complete
   const downloadPath = await download.path();
-  const invoicePath = path.join(downloadDirectory, title);
-  await fs.mkdir(downloadDirectory, { recursive: true });
-  await fs.rename(downloadPath, invoicePath);
-  console.log('Successfully downloading invoice ' + title + ' !');
 
-  return true;
+  return {
+    filePath: downloadPath,
+    year,
+    month,
+    price,
+  };
 };
 
 export const BouyguesProvider: Provider = {
+  name: 'Bouygues',
+  credential: {
+    namespace: 'bouygues',
+    loginMessage: 'Bouygues login (phone number)',
+  },
   login: bouyguesLogin,
   download: bouyguesDownload,
 };

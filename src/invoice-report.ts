@@ -1,90 +1,10 @@
-import { Credential, getStoredCredentials, storeCredentials } from './cred.service.js';
 import inquirer from 'inquirer';
-import { getBrowser } from './browser.service.js';
-import { Response } from 'playwright/types/types.js';
+import { getBrowser } from './service/browser.service.js';
 import path from 'path';
+import { InvoiceMetaData } from './types.js';
 
-const GOOGLE_NAMESPACE = 'google';
-
-export const loginForInvoiceReport = async () => {
-  const storedCredentials = await getStoredCredentials(GOOGLE_NAMESPACE);
-  let credentials: Credential;
-
-  if (storedCredentials.length === 0) {
-    console.log('You never connect to your Google account before.');
-
-    const result = await inquirer.prompt<Credential & { confirm: true }>([
-      {
-        type: 'input',
-        message: 'Google email',
-        name: 'account',
-      },
-      { type: 'password', message: 'Google password', name: 'password' },
-      { type: 'confirm', message: 'do you want to store this credentials for future use ?', name: 'confirm' },
-    ]);
-
-    credentials = { account: result.account, password: result.password };
-    if (result.confirm) {
-      await storeCredentials(GOOGLE_NAMESPACE, result.account, result.password);
-    }
-  } else {
-    console.log('Bouygues credential founded.');
-    credentials = storedCredentials[0];
-  }
-
-  console.log('Login Google with stored credentials');
-
-  let browser = await getBrowser();
-
-  let page = await browser.newPage();
-  await page.goto('https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin');
-
-  const redirectedUrl = page.url();
-  if (redirectedUrl.startsWith('https://myaccount.google.com/')) {
-    console.log('Successfully auto connected into your google account.');
-    return true;
-  }
-
-  console.log('It seems you are not logged in your google account anymore. Trying to autoconnect you in visual');
-
-  browser = await getBrowser({ headless: false });
-  page = await browser.newPage();
-  await page.goto('https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin');
-
-  await page.fill('input[type="email"]', credentials.account);
-  await page.click('"Suivant"');
-  await page.fill('input[type="password"]', credentials.password);
-  await page.click('"Suivant"');
-
-  const response = await page.waitForResponse((response: Response) => {
-    return response.url().startsWith('https://accounts.google.com/_/signin/challenge');
-  });
-  const responseBody = await response.body();
-  const hasTwoStepVerification = responseBody.toString().includes('TWO_STEP_VERIFICATION');
-  await page.waitForNavigation();
-
-  if (!hasTwoStepVerification && page.url().startsWith('https://myaccount.google.com/')) {
-    console.log('Autoconnect successfull!');
-  } else {
-    console.log('It seems you activated 2FA, waiting for you, to authorized this browser. Check the opened browser.');
-    try {
-      await page.waitForNavigation();
-      console.log('Successfully connected into your Google account!');
-    } catch (err) {
-      throw err;
-    }
-  }
-};
-
-export const createInvoiceReport = async (invoicePath: string) => {
-  await loginForInvoiceReport();
-
-  console.log('Parsing meta data for invoice...');
-  const fileName = invoicePath.split('/').pop();
-  const metadata = /(?<year>\d{4})-(?<month>\d{2})-(?<price>[\d.]+)\.pdf/.exec(fileName)?.groups;
-
-  console.log('Start creating an expense report with this meta', { ...metadata });
-  const browser = await getBrowser({ headless: false });
+export const createInvoiceReport = async (invoicePath: string, metadata: InvoiceMetaData) => {
+  const browser = await getBrowser();
   const page = await browser.newPage();
   await page.goto('https://zenika.my.alibeez.com/');
 
@@ -154,6 +74,6 @@ export const createInvoiceReport = async (invoicePath: string) => {
 
     await page.waitForSelector('"En attente de validation @"');
 
-    console.log('Successfully ');
+    console.log('Invoice successfully submitted');
   }
 };
