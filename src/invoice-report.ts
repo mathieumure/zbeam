@@ -3,7 +3,7 @@ import { getBrowser } from './service/browser.service.js';
 import path from 'path';
 import { InvoiceMetaData } from './types.js';
 
-export const createInvoiceReport = async (invoicePath: string, metadata: InvoiceMetaData) => {
+export const createInvoiceReport = async (invoicePath: string, metadata: InvoiceMetaData): Promise<void> => {
   const browser = await getBrowser();
   const page = await browser.newPage();
   await page.goto('https://zenika.my.alibeez.com/');
@@ -16,7 +16,7 @@ export const createInvoiceReport = async (invoicePath: string, metadata: Invoice
 
   await page.waitForSelector('"Nouvelle note de frais"');
 
-  await page.fill('.v-formlayout input', 'Facture téléphone ' + metadata.month + '/' + metadata.year);
+  await page.fill('.v-formlayout input', `Facture téléphone ${metadata.month}/${metadata.year}`);
   await page.click('"Sélectionner..."');
   await page.click('.tuning-datefield-calendar .currentmonth');
   await page.click('"Créer"');
@@ -36,9 +36,9 @@ export const createInvoiceReport = async (invoicePath: string, metadata: Invoice
 
   const amount = Math.min(25, parseFloat(metadata.price)).toString();
   const inputAmountId = await page.$eval("'Montant déclaré TTC'", (node) => node.parentElement.getAttribute('for'));
-  await page.focus('#' + inputAmountId);
+  await page.focus(`#${inputAmountId}`);
   await page.waitForTimeout(200);
-  await page.fill('#' + inputAmountId, amount);
+  await page.fill(`#${inputAmountId}`, amount);
 
   await page.click('"Sélectionner le type de dépense"');
   await page.waitForSelector('.v-popupbutton-popup');

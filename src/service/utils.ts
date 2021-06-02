@@ -1,6 +1,6 @@
 import { DownloadInfo, InvoiceMetaData } from '../types.js';
 
-export const generateInvoiceName = (downloadInfo: DownloadInfo) =>
+export const generateInvoiceName = (downloadInfo: DownloadInfo): string =>
   `${downloadInfo.year}-${downloadInfo.month}-${downloadInfo.price}.pdf`;
 
 export const getInvoiceInfo = (invoiceName: string): InvoiceMetaData => {
