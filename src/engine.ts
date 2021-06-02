@@ -14,20 +14,20 @@ export const providerMap: { [Key: string]: Provider } = {
 
 const downloadDir = path.join(path.dirname(''), 'invoices');
 
-export const login = async (provider: Provider) => {
+export const login = async (provider: Provider): Promise<void> => {
   const storedCredentials = await getStoredCredentials(provider.credential.namespace);
   let credentials: Credential;
 
   if (storedCredentials.length === 0) {
-    console.log('You never connect to your ' + provider.name + ' account before.');
+    console.log(`You never connect to your ${provider.name} account before.`);
 
     const result = await inquirer.prompt<Credential & { confirm: true }>([
       {
         type: 'input',
-        message: provider.credential.loginMessage || provider.name + ' login',
+        message: provider.credential.loginMessage || `${provider.name} login`,
         name: 'account',
       },
-      { type: 'password', message: provider.name || provider.name + ' password', name: 'password' },
+      { type: 'password', message: provider.name || `${provider.name} password`, name: 'password' },
       { type: 'confirm', message: 'do you want to store this credentials for future use ?', name: 'confirm' },
     ]);
 
@@ -37,17 +37,17 @@ export const login = async (provider: Provider) => {
       await storeCredentials(provider.credential.namespace, result.account, result.password);
     }
   } else {
-    console.log(provider.name + ' credential founded.');
+    console.log(`${provider.name} credential founded.`);
     credentials = storedCredentials[0];
   }
 
-  console.log('Trying to log in ' + provider.name + ' with your credentials');
+  console.log(`Trying to log in ${provider.name} with your credentials`);
   const loginResult = await provider.login(credentials);
 
   if (loginResult) {
-    console.log('Successfully connected in your ' + provider.name + ' account!');
+    console.log(`Successfully connected in your ${provider.name} account!`);
   } else {
-    console.error("Can't connect to your " + provider.name + ' account!');
+    console.error(`Can't connect to your ${provider.name} account!`);
     throw new Error("Can't connect to your \" + provider.name + ' account!");
   }
 };
@@ -68,7 +68,7 @@ export const download = async (providerName: string): Promise<void> => {
   const invoicePath = path.join(downloadDir, title);
   await fs.mkdir(downloadDir, { recursive: true });
   await fs.rename(downloadInfo.filePath, invoicePath);
-  console.log('Successfully downloading invoice ' + title + ' !');
+  console.log(`Successfully downloading invoice ${title} !`);
 };
 
 export const report = async (invoicePath: string): Promise<void> => {

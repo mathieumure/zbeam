@@ -21,7 +21,7 @@ const bouyguesLogin: ProviderLoginMethod = async (credentials) => {
     return true;
   }
 
-  let authFrame = await page.frame({ name: 'bycIframe' });
+  const authFrame = await page.frame({ name: 'bycIframe' });
 
   console.log('Log into bouygues user space...');
   await authFrame.fill('#passepartout #username', credentials.account);

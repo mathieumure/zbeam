@@ -3,7 +3,7 @@ import { firefox } from 'playwright';
 import path from 'path';
 
 let currentBrowser: BrowserContext;
-export const getBrowser = async (options?: BrowserContextOptions & { headless?: boolean }) => {
+export const getBrowser = async (options?: BrowserContextOptions & { headless?: boolean }): Promise<BrowserContext> => {
   await closeBrowser();
 
   const userDataDir = path.join(path.dirname(''), 'userDataDir');
@@ -12,7 +12,7 @@ export const getBrowser = async (options?: BrowserContextOptions & { headless?: 
   return currentBrowser;
 };
 
-export const closeBrowser = async () => {
+export const closeBrowser = async (): Promise<void> => {
   if (currentBrowser) {
     await currentBrowser.close();
   }
