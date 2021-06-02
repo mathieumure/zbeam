@@ -5,7 +5,7 @@
   "main": "save_old/old.ts",
   "license": "MIT",
   "bin": {
-    "beam": "./dist/bin/index.js"
+    "zbeam": "./dist/bin/index.js"
   },
   "scripts": {
     "start": "node ./dist/bin/index.js",
