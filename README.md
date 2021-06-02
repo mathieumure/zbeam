@@ -11,11 +11,13 @@ npx zbeam download
 ```
 
 To create an expense report from a downloaded invoice
+
 ```
 npx zbeam report <your file>
 ```
 
 example
+
 ```
 npx zbeam report ./invoices/2021-05-14.99.pdf
 ```
