@@ -3,6 +3,37 @@ import { getBrowser } from './service/browser.service.js';
 import path from 'path';
 import { InvoiceMetaData } from './types.js';
 
+const getRelatedMonthText = (month: string): string => {
+  switch (month) {
+    case '01':
+      return 'Janv.';
+    case '02':
+      return 'Févr.';
+    case '03':
+      return 'Mars';
+    case '04':
+      return 'Avr.';
+    case '05':
+      return 'Mai';
+    case '06':
+      return 'Juin';
+    case '07':
+      return 'Juil.';
+    case '08':
+      return 'Août';
+    case '09':
+      return 'Sept.';
+    case '10':
+      return 'Oct.';
+    case '11':
+      return 'Nov.';
+    case '12':
+      return 'Déc.';
+    default:
+      return null;
+  }
+};
+
 export const createInvoiceReport = async (invoicePath: string, metadata: InvoiceMetaData): Promise<void> => {
   const browser = await getBrowser();
   const page = await browser.newPage();
@@ -18,7 +49,7 @@ export const createInvoiceReport = async (invoicePath: string, metadata: Invoice
 
   await page.fill('.v-formlayout input', `Facture téléphone ${metadata.month}/${metadata.year}`);
   await page.click('"Sélectionner..."');
-  await page.click('.tuning-datefield-calendar .currentmonth');
+  await page.click(`.tuning-datefield-calendar td:has-text("${getRelatedMonthText(metadata.month)}")`);
   await page.click('"Créer"');
 
   console.log('Reports container created. Add a new expense with your invoice.');
