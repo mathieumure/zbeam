@@ -22,6 +22,13 @@ example
 npx zbeam report ./invoices/2021-05-14.99.pdf
 ```
 
+Your file must follow this synthax
+
+```
+<year>-<month>-<amount with dot>.<extension>
+```
+
+
 Display usage
 
 ```
