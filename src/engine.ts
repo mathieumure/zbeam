@@ -1,5 +1,6 @@
 import type { Provider } from './types';
 import { BouyguesProvider } from './provider/bouyges-provider.js';
+import { SoshProvider } from './provider/sosh-provider.js';
 import path from 'path';
 import { Credential, getStoredCredentials, removeCredentials, storeCredentials } from './service/cred.service.js';
 import inquirer from 'inquirer';
@@ -12,6 +13,7 @@ import { InvoiceMetaData } from './types';
 
 export const providerMap: { [Key: string]: Provider } = {
   bouygues: BouyguesProvider,
+  sosh: SoshProvider,
 };
 
 const downloadDir = path.join(path.dirname(''), 'invoices');

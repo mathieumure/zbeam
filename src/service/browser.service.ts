@@ -4,7 +4,7 @@ import path from 'path';
 
 let currentBrowser: BrowserContext;
 export const getBrowser = async (
-  options: BrowserContextOptions & { headless?: boolean } = { locale: 'fr-FR' }
+  options: BrowserContextOptions & { headless?: boolean } = { locale: 'fr-FR', headless: false }
 ): Promise<BrowserContext> => {
   await closeBrowser();
 
