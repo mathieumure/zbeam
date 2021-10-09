@@ -8,6 +8,7 @@ import fs from 'fs/promises';
 import { GoogleProvider } from './provider/google-provider.js';
 import { createInvoiceReport } from './invoice-report.js';
 import chalk from 'chalk';
+import { InvoiceMetaData } from './types';
 
 export const providerMap: { [Key: string]: Provider } = {
   bouygues: BouyguesProvider,
@@ -78,20 +79,89 @@ export const download = async (providerName: string): Promise<void> => {
   const invoicePath = path.join(downloadDir, title);
   await fs.mkdir(downloadDir, { recursive: true });
   await fs.rename(downloadInfo.filePath, invoicePath);
-  console.log(`Successfully downloading invoice ${title} !`);
   console.log(chalk.green(`\n🎉 Successfully downloading invoice ${chalk.yellow(title)}!\n`));
 };
 
+export const validate = async (invoicePath: string): Promise<InvoiceMetaData> => {
+  console.log('Parsing meta data for invoice...');
+  const fileName = invoicePath.split('/').pop();
+
+  try {
+    await fs.access(invoicePath);
+  } catch {
+    console.error(chalk.red(`\n${invoicePath} doesn't not exist.\n`));
+    return null;
+  }
+
+  const metadata = getInvoiceInfo(fileName);
+
+  const printError = (fieldName: string) => console.log(
+    chalk.red(
+      `\n⚠️  We can't extract ${fieldName} from ${fileName}. The filename should be in this format:\n${chalk.yellow(
+        '<year>-<month>-<amount with dot>.<extension>'
+      )}\n`
+    )
+  );
+
+  if (!metadata) {
+    console.log(
+      chalk.red(
+        `\n⚠️  We can't parse ${fileName}. The filename should be in this format\n${chalk.yellow(
+          '<year>-<month>-<amount with dot>.<extension>'
+        )}\n`
+      )
+    );
+    return null;
+  }
+
+  if (!metadata.year) {
+    printError('year')
+    return null;
+  }
+
+  if (!metadata.month) {
+    printError('month')
+    return null;
+  }
+
+  if (!metadata.price) {
+    printError('amount')
+    return null;
+  }
+
+  console.log('✅ We will create an invoice with the following attributes');
+  console.log(`Year: ${chalk.yellow(metadata.year)}`);
+  console.log(`Month: ${chalk.yellow(metadata.month)}`);
+  console.log(`Amount: ${chalk.yellow(metadata.price)}`);
+  return metadata;
+};
+
 export const report = async (invoicePath: string): Promise<void> => {
+  const metadata = await validate(invoicePath);
+  if (!metadata) {
+    process.exit(-1);
+    return;
+  }
+
+  const result = await inquirer.prompt<{ confirm: true }>([
+    {
+      type: 'confirm',
+      message: 'do you to proceed ?',
+      name: 'confirm',
+    },
+  ]);
+
+  if (!result.confirm) {
+    console.log('Aborting');
+    process.exit(-1);
+    return;
+  }
+
   const loginSuccessful = await login(GoogleProvider);
   if (!loginSuccessful) {
     process.exit(-1);
     return;
   }
-
-  console.log('Parsing meta data for invoice...');
-  const fileName = invoicePath.split('/').pop();
-  const metadata = getInvoiceInfo(fileName);
 
   console.log('Start creating an expense report with this meta', { ...metadata });
 

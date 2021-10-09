@@ -5,6 +5,9 @@ export const generateInvoiceName = (downloadInfo: DownloadInfo): string =>
 
 export const getInvoiceInfo = (invoiceName: string): InvoiceMetaData => {
   const metadata = /(?<year>\d{4})-(?<month>\d{2})-(?<price>[\d.]+)\.pdf/.exec(invoiceName)?.groups;
+  if (!metadata) {
+    return null;
+  }
   return {
     year: metadata.year,
     month: metadata.month,
