@@ -34,7 +34,6 @@ Validate filename
 npx validate <your file>
 ```
 
-
 Display usage
 
 ```

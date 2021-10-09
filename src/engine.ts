@@ -95,13 +95,14 @@ export const validate = async (invoicePath: string): Promise<InvoiceMetaData> =>
 
   const metadata = getInvoiceInfo(fileName);
 
-  const printError = (fieldName: string) => console.log(
-    chalk.red(
-      `\n⚠️  We can't extract ${fieldName} from ${fileName}. The filename should be in this format:\n${chalk.yellow(
-        '<year>-<month>-<amount with dot>.<extension>'
-      )}\n`
-    )
-  );
+  const printError = (fieldName: string) =>
+    console.log(
+      chalk.red(
+        `\n⚠️  We can't extract ${fieldName} from ${fileName}. The filename should be in this format:\n${chalk.yellow(
+          '<year>-<month>-<amount with dot>.<extension>'
+        )}\n`
+      )
+    );
 
   if (!metadata) {
     console.log(
@@ -115,17 +116,17 @@ export const validate = async (invoicePath: string): Promise<InvoiceMetaData> =>
   }
 
   if (!metadata.year) {
-    printError('year')
+    printError('year');
     return null;
   }
 
   if (!metadata.month) {
-    printError('month')
+    printError('month');
     return null;
   }
 
   if (!metadata.price) {
-    printError('amount')
+    printError('amount');
     return null;
   }
 
