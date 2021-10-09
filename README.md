@@ -28,6 +28,12 @@ Your file must follow this synthax
 <year>-<month>-<amount with dot>.<extension>
 ```
 
+Validate filename
+
+```
+npx validate <your file>
+```
+
 Display usage
 
 ```
