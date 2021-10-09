@@ -2,6 +2,7 @@ import inquirer from 'inquirer';
 import { getBrowser } from './service/browser.service.js';
 import path from 'path';
 import { InvoiceMetaData } from './types.js';
+import chalk from 'chalk';
 
 const getRelatedMonthText = (month: string): string => {
   switch (month) {
@@ -88,9 +89,10 @@ export const createInvoiceReport = async (invoicePath: string, metadata: Invoice
 
   await page.waitForSelector('"Ajouter une dépense"');
 
-  const currentPath = await page.url();
+  const currentPath = page.url();
 
   console.log('Expense successfully created at', currentPath);
+  console.log(chalk.green(`\n🎉 Expense successfully created at ${chalk.yellow(currentPath)}\n`));
 
   const inquirerResult = await inquirer.prompt<{ confirm: true }>([
     { type: 'confirm', message: 'Do you want to submit this invoice report ?', name: 'confirm' },
@@ -105,6 +107,6 @@ export const createInvoiceReport = async (invoicePath: string, metadata: Invoice
 
     await page.waitForSelector('"En attente de validation @"');
 
-    console.log('Invoice successfully submitted');
+    console.log(chalk.green(`\n🎉 Invoice successfully submitted!\n`));
   }
 };
