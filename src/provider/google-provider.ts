@@ -1,4 +1,4 @@
-import { Provider, ProviderLoginMethod } from '../types.js';
+import { Provider, ProviderGetAccountNameMethod, ProviderLoginMethod } from '../types.js';
 import { getBrowser } from '../service/browser.service.js';
 import { Response } from 'playwright/types/types.js';
 
@@ -45,12 +45,33 @@ const googleLogin: ProviderLoginMethod = async (credentials) => {
   }
 };
 
+const accountName: ProviderGetAccountNameMethod = (credentials) => {
+  return credentials.account;
+};
+
 export const GoogleProvider: Provider = {
   name: 'Google',
   credential: {
     namespace: 'google',
-    loginMessage: 'Google email',
   },
   login: googleLogin,
   download: () => Promise.reject('not implemented'),
+  inputs: [
+    {
+      type: 'input',
+      message: 'Google mail',
+      name: 'account',
+    },
+    {
+      type: 'password',
+      message: 'Google password',
+      name: 'password',
+    },
+    {
+      type: 'confirm',
+      message: 'do you want to store this credentials for future use ?',
+      name: 'confirm',
+    },
+  ],
+  getAccountName: accountName,
 };

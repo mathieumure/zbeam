@@ -21,20 +21,12 @@ export const login = async (provider: Provider): Promise<void> => {
   if (storedCredentials.length === 0) {
     console.log(`You never connect to your ${provider.name} account before.`);
 
-    const result = await inquirer.prompt<Credential & { confirm: true }>([
-      {
-        type: 'input',
-        message: provider.credential.loginMessage || `${provider.name} login`,
-        name: 'account',
-      },
-      { type: 'password', message: provider.name || `${provider.name} password`, name: 'password' },
-      { type: 'confirm', message: 'do you want to store this credentials for future use ?', name: 'confirm' },
-    ]);
+    const result = await inquirer.prompt<Credential & { confirm: true }>(provider.inputs);
 
-    credentials = { account: result.account, password: result.password };
+    credentials = { account: provider.getAccountName(result), password: result.password };
 
     if (result.confirm) {
-      await storeCredentials(provider.credential.namespace, result.account, result.password);
+      await storeCredentials(provider.credential.namespace, provider.getAccountName(result), result.password);
     }
   } else {
     console.log(`${provider.name} credential founded.`);

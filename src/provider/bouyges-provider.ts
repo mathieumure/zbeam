@@ -1,13 +1,13 @@
-import type { Provider, ProviderDownloadMethod } from '../types.js';
+import type { Provider, ProviderDownloadMethod, ProviderGetAccountNameMethod } from '../types.js';
 import { getBrowser } from '../service/browser.service.js';
 import { ProviderLoginMethod } from '../types.js';
+import { Credential } from '../service/cred.service.js';
 
 const bouyguesLogin: ProviderLoginMethod = async (credentials) => {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
   await page.goto('https://www.bouyguestelecom.fr/mon-compte/mes-factures');
-  await page.waitForNavigation({ url: 'https://www.bouyguestelecom.fr/mon-compte/mes-factures' });
   await page.waitForLoadState('networkidle');
 
   const privacyPopup = await page.$('#popin_tc_privacy');
@@ -24,13 +24,15 @@ const bouyguesLogin: ProviderLoginMethod = async (credentials) => {
   const authFrame = await page.frame({ name: 'bycIframe' });
 
   console.log('Log into bouygues user space...');
-  await authFrame.fill('#passepartout #username', credentials.account);
+  // bouygues want a last name, we add it to the account name
+  const [account, lastName] = getAccountAndLastNameFromAccountName(credentials.account);
+  await authFrame.fill('#passepartout #lastname', lastName);
+  await authFrame.fill('#passepartout #username', account);
   await authFrame.fill('#passepartout #password', credentials.password);
   const submitButton = await authFrame.$('#passepartout button[type="submit"]');
   await submitButton.click();
 
-  await page.waitForNavigation({ url: 'https://www.bouyguestelecom.fr/mon-compte/mes-factures#' });
-  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(5000);
 
   return page.url() === 'https://www.bouyguestelecom.fr/mon-compte/mes-factures#';
 };
@@ -67,12 +69,44 @@ const bouyguesDownload: ProviderDownloadMethod = async () => {
   };
 };
 
+const accountName: ProviderGetAccountNameMethod = (credentials: BouyguesCredentials) => {
+  return `${credentials.account}_${credentials.lastName}`;
+};
+
+const getAccountAndLastNameFromAccountName = (accountName: string) => {
+  return accountName.split('_')
+}
+
+export type BouyguesCredentials = Credential & { lastName?: string };
+
 export const BouyguesProvider: Provider = {
   name: 'Bouygues',
+  inputs: [
+    {
+      type: 'input',
+      message: 'Bouygues login (phone number)',
+      name: 'account',
+    },
+    {
+      type: 'password',
+      message: 'Bouygues password',
+      name: 'password',
+    },
+    {
+      type: 'lastName',
+      message: 'Bouygues last name',
+      name: 'lastName',
+    },
+    {
+      type: 'confirm',
+      message: 'do you want to store this credentials for future use ?',
+      name: 'confirm',
+    },
+  ],
   credential: {
     namespace: 'bouygues',
-    loginMessage: 'Bouygues login (phone number)',
   },
   login: bouyguesLogin,
   download: bouyguesDownload,
+  getAccountName: accountName,
 };
