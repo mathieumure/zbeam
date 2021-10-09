@@ -6,7 +6,7 @@ export type Credential = {
 };
 
 export const generateKeystoreNamespace =
-  (prefix = 'AutoTelFactu App') =>
+  (prefix = 'ZBeam App') =>
   (localNamespace: string): string =>
     `${prefix}: ${localNamespace}`;
 
@@ -18,4 +18,14 @@ export const getStoredCredentials = async (namespace: string): Promise<Credentia
 
 export const storeCredentials = async (namespace: string, account: string, password: string): Promise<void> => {
   return await keytar.setPassword(getKeyStoreNamespace(namespace), account, password);
+};
+
+export const removeCredentials = async (namespace: string): Promise<boolean> => {
+  const storedCredentials = await getStoredCredentials(namespace);
+
+  const results = await Promise.all(
+    storedCredentials.map((it) => keytar.deletePassword(getKeyStoreNamespace(namespace), it.account))
+  );
+
+  return results.every((result) => result);
 };
