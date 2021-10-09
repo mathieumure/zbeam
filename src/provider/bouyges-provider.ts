@@ -74,8 +74,8 @@ const accountName: ProviderGetAccountNameMethod = (credentials: BouyguesCredenti
 };
 
 const getAccountAndLastNameFromAccountName = (accountName: string) => {
-  return accountName.split('_')
-}
+  return accountName.split('_');
+};
 
 export type BouyguesCredentials = Credential & { lastName?: string };
 

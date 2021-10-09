@@ -28,7 +28,6 @@ Your file must follow this synthax
 <year>-<month>-<amount with dot>.<extension>
 ```
 
-
 Display usage
 
 ```
