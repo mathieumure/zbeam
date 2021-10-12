@@ -1,93 +1,97 @@
 import type { Provider, ProviderDownloadMethod, ProviderGetAccountNameMethod } from '../types.js';
 import { getBrowser } from '../service/browser.service.js';
 import { ProviderLoginMethod } from '../types.js';
+import { Credential } from '../service/cred.service.js';
+
+const monthsStringToNumber: Record<string, string> = {
+  janvier: '01',
+  fevrier: '02',
+  mars: '03',
+  avril: '04',
+  mai: '05',
+  juin: '06',
+  juillet: '07',
+  aout: '08',
+  septembre: '09',
+  octobre: '10',
+  novembre: '11',
+  décembre: '12',
+};
 
 const soshLogin: ProviderLoginMethod = async (credentials) => {
+  //{headless: true}
   const browser = await getBrowser();
   const page = await browser.newPage();
 
-  await page.goto('https://login.orange.fr/');
+  await page.goto('https://login.orange.fr/#/');
 
-  await page.goto('https://login.orange.fr/#/password');
-
-  await Promise.all([
-    page.waitForNavigation(/*{ url: 'https://login.orange.fr/#/listAccount' }*/),
-    page.click('[data-testid="change-account"]'),
-  ]);
-
-  await page.click('text=Utiliser un autre compte');
-
-  await page.click('[data-testid="input-login"]');
-
-  await page.fill('[data-testid="input-login"]', credentials.account);
-
-  await Promise.all([
-    page.waitForNavigation(/*{ url: 'https://login.orange.fr/#/password' }*/),
-    page.press('[data-testid="input-login"]', 'Enter'),
-  ]);
-
+  // If we are already logged in, the webpage will ask to stay connected
   const alreadyConnected = await page.$('[data-testid="button-keepconnected"]');
   if (alreadyConnected) {
     alreadyConnected.click();
-  } else {
-    await page.click('[data-testid="submit-password"]');
-    await page.fill('[data-testid="input-password"]', credentials.password);
-    await page.press('[data-testid="input-password"]', 'Enter');
+    await page.waitForTimeout(1000);
+    return true;
   }
 
+  // Orange tries to auto-discover login account based on origin network
+  // In that case the login is auto-filled with the network livebox owner login
+  // In our case this may not be what we want (public networks etc) so we go back to the account selection page
+
+  const changeAccountButton = await page.$('[data-testid="change-account"]');
+  if (changeAccountButton) {
+    await Promise.all([page.waitForNavigation(), changeAccountButton.click()]);
+    await page.click('text=Utiliser un autre compte');
+  }
+
+  await page.click('[data-testid="input-login"]');
+  await page.fill('[data-testid="input-login"]', credentials.account);
+  await Promise.all([page.waitForNavigation(), page.press('[data-testid="input-login"]', 'Enter')]);
+
+  await page.click('[data-testid="submit-password"]');
+  await page.fill('[data-testid="input-password"]', credentials.password);
+  await Promise.all([page.waitForNavigation(), await page.press('[data-testid="input-password"]', 'Enter')]);
+
   // Login takes a bit of time
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000);
 
   return true;
 };
 
 const soshDownload: ProviderDownloadMethod = async () => {
-  console.log('Getting the list of invoices...');
-  const browser = await getBrowser({ acceptDownloads: true, headless: false });
+  const browser = await getBrowser({ acceptDownloads: true });
   const page = await browser.newPage();
 
   await page.goto('https://espace-client.orange.fr/factures-paiement?sosh=');
-
   await page.waitForTimeout(2000);
 
-  await Promise.all([
-    page.waitForNavigation(/*{ url: 'https://espace-client.orange.fr/facture-paiement/9061346781' }*/),
-    page.click('text=Gérer et payer vos factures'),
-  ]);
+  // This does not take into account multi 
+  await Promise.all([page.waitForNavigation(), page.click('text=Gérer et payer vos factures')]);
 
-  await page.waitForTimeout(1000);
+  // Wait needed for bill information to be displayed
+  await page.waitForTimeout(2000);
 
-  //TODO remove
-  page.on('response', async (response) => {
-    if (
-      response
-        .url()
-        .includes(
-          'https://sso-f.orange.fr/omoi_erb/facture/v2.0/billsAndPaymentInfos/users/current/contracts/9061346781'
-        )
-    ) {
-      const body = await response.json();
-      console.log('<<', response.status(), response.url(), body);
-    }
+  // Extract bill month and year
+  const date = await page
+    .$('#last-bill-date')
+    .then((e) => e.textContent())
+    .catch((exc) => {
+      throw "Failed to recover bill date, selector may have changed\n" + exc;
+    });
+
+  const [, monthString, year] = date.trim().split(' ');
+  const month = monthsStringToNumber[monthString.toLowerCase()];
+
+  // Extract bill amount
+  let price = await page.$('[data-e2e="bp-cardAmount"]').then((e) => e.textContent()).catch((exc) => {
+    throw "Failed to recover bill amount, selector may have changed\n" + exc;
   });
 
-  await page.click('text=Voir la facture');
-
-  const date = await page.$('#last-bill-date').then((e) => e.textContent());
-  const [, month, year] = date.trim().split(' ');
-
-  let price = await page.$('[data-e2e="bp-cardAmount"]').then((e) => e.textContent());
   price = price.replace(',', '.').replace('€', '').trim();
 
-  console.log(month, year, price);
-
-  await page.waitForTimeout(4000);
-
+  await Promise.all([page.waitForNavigation(), page.click('text=Voir la facture')]);
   const lastMonthDownloadLink = await page.$('text=Télécharger');
 
-  console.log(lastMonthDownloadLink);
   const [download] = await Promise.all([page.waitForEvent('download'), lastMonthDownloadLink.click()]);
-
   await page.waitForTimeout(1000);
 
   const downloadPath = await download.path();
