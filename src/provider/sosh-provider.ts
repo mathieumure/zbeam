@@ -36,7 +36,6 @@ const soshLogin: ProviderLoginMethod = async (credentials) => {
   // Orange tries to auto-discover login account based on origin network
   // In that case the login is auto-filled with the network livebox owner login
   // In our case this may not be what we want (public networks etc) so we go back to the account selection page
-
   const changeAccountButton = await page.$('[data-testid="change-account"]');
   if (changeAccountButton) {
     await Promise.all([page.waitForNavigation(), changeAccountButton.click()]);
@@ -47,7 +46,6 @@ const soshLogin: ProviderLoginMethod = async (credentials) => {
   await page.fill('[data-testid="input-login"]', credentials.account);
   await Promise.all([page.waitForNavigation(), page.press('[data-testid="input-login"]', 'Enter')]);
 
-  await page.click('[data-testid="submit-password"]');
   await page.fill('[data-testid="input-password"]', credentials.password);
   await Promise.all([page.waitForNavigation(), await page.press('[data-testid="input-password"]', 'Enter')]);
 
@@ -64,7 +62,7 @@ const soshDownload: ProviderDownloadMethod = async () => {
   await page.goto('https://espace-client.orange.fr/factures-paiement?sosh=');
   await page.waitForTimeout(2000);
 
-  // This does not take into account multi 
+  // This does not take into account multi
   await Promise.all([page.waitForNavigation(), page.click('text=Gérer et payer vos factures')]);
 
   // Wait needed for bill information to be displayed
@@ -75,16 +73,19 @@ const soshDownload: ProviderDownloadMethod = async () => {
     .$('#last-bill-date')
     .then((e) => e.textContent())
     .catch((exc) => {
-      throw "Failed to recover bill date, selector may have changed\n" + exc;
+      throw `Failed to recover bill date, selector may have changed\n${exc}`;
     });
 
   const [, monthString, year] = date.trim().split(' ');
   const month = monthsStringToNumber[monthString.toLowerCase()];
 
   // Extract bill amount
-  let price = await page.$('[data-e2e="bp-cardAmount"]').then((e) => e.textContent()).catch((exc) => {
-    throw "Failed to recover bill amount, selector may have changed\n" + exc;
-  });
+  let price = await page
+    .$('[data-e2e="bp-cardAmount"]')
+    .then((e) => e.textContent())
+    .catch((exc) => {
+      throw `Failed to recover bill amount, selector may have changed\n${exc}`;
+    });
 
   price = price.replace(',', '.').replace('€', '').trim();
 
