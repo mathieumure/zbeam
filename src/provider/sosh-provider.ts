@@ -1,4 +1,4 @@
-import type { Provider, ProviderDownloadMethod } from '../types.js';
+import type { Provider, ProviderDownloadMethod, ProviderGetAccountNameMethod } from '../types.js';
 import { getBrowser } from '../service/browser.service.js';
 import { ProviderLoginMethod } from '../types.js';
 
@@ -100,12 +100,33 @@ const soshDownload: ProviderDownloadMethod = async () => {
   };
 };
 
+const accountName: ProviderGetAccountNameMethod = (credentials: Credential) => {
+  return `${credentials.account}`;
+};
+
 export const SoshProvider: Provider = {
   name: 'Sosh',
+  inputs: [
+    {
+      type: 'input',
+      message: 'Sosh login (email or phone number)',
+      name: 'account',
+    },
+    {
+      type: 'password',
+      message: 'Sosh password',
+      name: 'password',
+    },
+    {
+      type: 'confirm',
+      message: 'do you want to store this credentials for future use ?',
+      name: 'confirm',
+    },
+  ],
   credential: {
     namespace: 'sosh',
-    loginMessage: 'Sosh login (email or phone number)',
   },
   login: soshLogin,
   download: soshDownload,
+  getAccountName: accountName,
 };
