@@ -5,7 +5,7 @@ import { Credential } from '../service/cred.service.js';
 
 const monthsStringToNumber: Record<string, string> = {
   janvier: '01',
-  fevrier: '02',
+  février: '02',
   mars: '03',
   avril: '04',
   mai: '05',
@@ -19,7 +19,6 @@ const monthsStringToNumber: Record<string, string> = {
 };
 
 const soshLogin: ProviderLoginMethod = async (credentials) => {
-  //{headless: true}
   const browser = await getBrowser();
   const page = await browser.newPage();
 
@@ -28,8 +27,8 @@ const soshLogin: ProviderLoginMethod = async (credentials) => {
   // If we are already logged in, the webpage will ask to stay connected
   const alreadyConnected = await page.$('[data-testid="button-keepconnected"]');
   if (alreadyConnected) {
-    alreadyConnected.click();
-    await page.waitForTimeout(1000);
+    await alreadyConnected.click();
+    await page.waitForLoadState('networkidle');
     return true;
   }
 
@@ -50,7 +49,7 @@ const soshLogin: ProviderLoginMethod = async (credentials) => {
   await Promise.all([page.waitForNavigation(), await page.press('[data-testid="input-password"]', 'Enter')]);
 
   // Login takes a bit of time
-  await page.waitForTimeout(1000);
+  await page.waitForLoadState('networkidle');
 
   return true;
 };
@@ -60,7 +59,7 @@ const soshDownload: ProviderDownloadMethod = async () => {
   const page = await browser.newPage();
 
   await page.goto('https://espace-client.orange.fr/factures-paiement?sosh=');
-  await page.waitForTimeout(2000);
+  await page.waitForLoadState('networkidle');
 
   // This does not take into account multi
   await Promise.all([page.waitForNavigation(), page.click('text=Gérer et payer vos factures')]);
@@ -93,8 +92,6 @@ const soshDownload: ProviderDownloadMethod = async () => {
   const lastMonthDownloadLink = await page.$('text=Télécharger');
 
   const [download] = await Promise.all([page.waitForEvent('download'), lastMonthDownloadLink.click()]);
-  await page.waitForTimeout(1000);
-
   const downloadPath = await download.path();
 
   return {
