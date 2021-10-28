@@ -58,12 +58,12 @@ const soshDownload: ProviderDownloadMethod = async () => {
   const browser = await getBrowser({ acceptDownloads: true });
   const page = await browser.newPage();
 
-  await page.goto('https://espace-client.orange.fr/factures-paiement?sosh=');
-  await page.waitForLoadState('networkidle');
+  await page.goto('https://www.sosh.fr/client');
 
-  // This does not take into account multi
-  await Promise.all([page.waitForNavigation(), page.click('text=Gérer et payer vos factures')]);
+  await page.waitForTimeout(2000);
+  await page.click('li >> button:has-text("mobile")');
 
+  await Promise.all([page.click('text=Consulter votre facture'), page.waitForNavigation()]);
   // Wait needed for bill information to be displayed
   await page.waitForTimeout(2000);
 
